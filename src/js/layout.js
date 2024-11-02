@@ -33,7 +33,7 @@ const Layout = () => {
               element={<NuevoContacto />}
             />
             <Route
-              path="http://localhost:3000/editar-contacto/:theId"
+              path="/http://localhost:3000/editar-contacto/:theId"
               element={<EditarContacto />}
             />
             <Route path="*" element={<h1>Not found!</h1>} />

@@ -1,0 +1,8 @@
+img {
+  border-radius: 100%;
+  border: 1px solid rgb(102, 102, 102);
+  height: 100px;
+  width: 100px;
+  object-fit: cover;
+  object-position: center;
+}
