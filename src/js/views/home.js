@@ -28,12 +28,25 @@ export const Home = () => {
         >
           Crear agenda
         </button>
-        <Link to="/nuevo-contacto">
-          <button className="btn btn-success ms-2">Crear contacto</button>
-        </Link>
+
+        <button
+          className="btn btn-success ms-2"
+          disabled={!store.nombreAgenda} // Deshabilitar si no hay agenda
+          onClick={() => {
+            if (store.nombreAgenda) {
+              navigate("/nuevo-contacto"); // Redirigir solo si hay agenda
+            }
+          }}
+        >
+          Crear contacto
+        </button>
+
         <button
           onClick={() => actions.obtenerContactos()}
           className="btn btn-outline-success ms-2"
+          disabled={
+            store.nombreAgenda.length === 0 || store.contacts.length === 0
+          }
         >
           Obtener contactos
         </button>
@@ -101,52 +114,58 @@ export const Home = () => {
         </div>
       </div>
       <div className="contactList m-1">
-        {store.contacts.map((user) => (
-          <div
-            className="singleContact border rounded-2 d-flex flex-row m-1"
-            key={user.id}
-          >
-            <div className="singleContactImg col-auto d-flex justify-content-center mx-4 my-auto">
-              <img src={userImage} alt={user.name} />
-            </div>
-            <div className="col-9 ps-2">
-              <h4>
-                {user.name} - {user.id}
-              </h4>
-              <p>
-                <i className="fas fa-home pe-2"></i>
-                {user.address}
-              </p>
-              <p>
-                <i className="fas fa-phone-alt pe-2"></i>
-                {user.phone}
-              </p>
-              <p>
-                <i className="far fa-envelope pe-2"></i>
-                {user.email}
-              </p>
-            </div>
+        {store.nombreAgenda.length === 0 ? (
+          <h3>No existe una agenda.</h3>
+        ) : store.contacts.length === 0 ? (
+          <h3>No existen contactos.</h3>
+        ) : (
+          store.contacts.map((user) => (
+            <div
+              className="singleContact border rounded-2 d-flex flex-row m-1"
+              key={user.id}
+            >
+              <div className="singleContactImg col-auto d-flex justify-content-center mx-4 my-auto">
+                <img src={userImage} alt={user.name} />
+              </div>
+              <div className="col-9 ps-2">
+                <h4>
+                  {user.name} - {user.id}
+                </h4>
+                <p>
+                  <i className="fas fa-home pe-2"></i>
+                  {user.address}
+                </p>
+                <p>
+                  <i className="fas fa-phone-alt pe-2"></i>
+                  {user.phone}
+                </p>
+                <p>
+                  <i className="far fa-envelope pe-2"></i>
+                  {user.email}
+                </p>
+              </div>
 
-            <div className="col ">
-              <div className="editContact h-50">
-                <button
-                  className="btn btn-outline-success h-100 w-100"
-                  onClick={() => goEditContact(user.id)}
-                >
-                  <i className="fas fa-pencil-alt"></i>
-                </button>
-              </div>
-              <div className="deleteContact h-50 ">
-                <button
-                  className="btn btn btn-outline-danger h-100 w-100"
-                  onClick={() => actions.eliminarContacto(user.id)}
-                >
-                  <i className="fas fa-trash-alt"></i>
-                </button>
+              <div className="col ">
+                <div className="editContact h-50">
+                  <button
+                    className="btn btn-outline-success h-100 w-100"
+                    onClick={() => goEditContact(user.id)}
+                  >
+                    <i className="fas fa-pencil-alt"></i>
+                  </button>
+                </div>
+                <div className="deleteContact h-50 ">
+                  <button
+                    className="btn btn btn-outline-danger h-100 w-100"
+                    onClick={() => actions.eliminarContacto(user.id)}
+                  >
+                    <i className="fas fa-trash-alt"></i>
+                  </button>
+                </div>
               </div>
             </div>
-          </div>
-        ))}
+          ))
+        )}
       </div>
     </div>
   );
