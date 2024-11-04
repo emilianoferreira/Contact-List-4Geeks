@@ -27,15 +27,9 @@ const Layout = () => {
             <Route path="/" element={<Home />} />
             <Route path="/demo" element={<Demo />} />
             {/* ":theid" es un paraps (componente aparte) que ayuda  */}
-            <Route path="/single/:theid" element={<Single />} />
-            <Route
-              path="/http://localhost:3000/nuevo-contacto"
-              element={<NuevoContacto />}
-            />
-            <Route
-              path="/http://localhost:3000/editar-contacto/:theId"
-              element={<EditarContacto />}
-            />
+            <Route path="/single/:id" element={<Single />} />
+            <Route path="/nuevo-contacto" element={<NuevoContacto />} />
+            <Route path="/editar-contacto/:id" element={<EditarContacto />} />
             <Route path="*" element={<h1>Not found!</h1>} />
           </Routes>
           <Footer />

@@ -1,122 +1,25 @@
-import React, { useState, useEffect, useContext } from "react";
+import React, { useEffect, useContext } from "react";
 import { Context } from "../store/appContext";
 import "../../styles/home.css";
-import { Link, useParamsm, useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import userImage from "../../img/user_image.jpg";
 
 export const Home = () => {
-  const [contacts, setContacts] = useState([]);
   const navigate = useNavigate();
   const { store, actions } = useContext(Context);
 
-  const obtenerContactos = async () => {
-    if (!store.nombreAgenda) {
-      alert("No existen contactos");
-      //Redirigir a NuevoContacto
-    }
+  useEffect(() => {
+    actions.obtenerContactos();
+  }, []);
 
-    const url = `https://playground.4geeks.com/contact/agendas/${store.nombreAgenda}/contacts`;
-    try {
-      console.log(`Haciendo fetch a: ${url}`);
-      const response = await fetch(url);
-
-      console.log(`Respuesta recibida: ${response.status}`);
-
-      if (!response.ok) {
-        throw new Error(`Error en la respuesta: ${response.status}`);
-      }
-
-      const data = await response.json();
-      console.log(data);
-      setContacts(data.contacts);
-
-      return `Agenda cargada correctamente`;
-    } catch (e) {
-      console.error(`Manejo interno del error: ${e.message}`);
-      throw new Error(`Manejo interno del error. Error original: ${e.message}`);
-    }
+  const goEditContact = (contactId) => {
+    console.log(`Nos fuimos a editar el contacto ID: ${contactId}`);
+    navigate(`/editar-contacto/${contactId}`);
   };
 
-  // const eliminarContacto = async () => {
-  //   const nuevoContacto = {
-  //     name: contactFullName,
-  //     email: contactEmail,
-  //     phone: contactPhone,
-  //     address: contactAddress,
-  //   };
-
-  //   try {
-  //     const response = await fetch(
-  //       `https://playground.4geeks.com/contact/agendas/${store.nombreAgenda}`,
-  //       {
-  //         method: "POST",
-  //         headers: {
-  //           "Content-Type": "application/json",
-  //         },
-  //         body: JSON.stringify(nuevoContacto),
-  //       }
-  //     );
-
-  //     if (!response.ok) {
-  //       throw new Error(`Error en la respuesta: ${response.status}`);
-  //     }
-
-  //     const data = await response.json();
-  //     console.log("Contacto creado:", data);
-  //     navigate("/"); // Redirigir después de crear el contacto
-  //   } catch (error) {
-  //     console.error("Error al crear el contacto:", error);
-  //   }
-  // };
-
-  const crearAgenda = async (e) => {
-    e.preventDefault();
-    const nuevaAgenda = {
-      slug: store.nombreAgenda,
-      id: Math.random(),
-    };
-
-    try {
-      const response = await fetch(
-        `https://playground.4geeks.com/contact/agendas/${nuevaAgenda.slug}`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(nuevaAgenda),
-        }
-      );
-
-      if (!response.ok) {
-        throw new Error(`Error en la respuesta: ${response.status}`);
-      }
-
-      const data = await response.json();
-      console.log("Agenda creada:", data);
-    } catch (error) {
-      console.error("Error al crear la agenda:", error);
-    }
-  };
-
-  const goEditContact = (e) => {
-    console.log("Nos fuimos a editar el contacto ID", user.id);
-    navigate(`/http://localhost:3000/editar-contacto/:${user.id}`);
-  };
-  useEffect(() => {}, []);
   return (
     <div className=" container p-2">
       <div className="d-flex flex-row p-2">
-        <Link to="/http://localhost:3000/nuevo-contacto">
-          <button className="btn btn-success ms-2">Crear contacto</button>
-        </Link>
-        <button
-          onClick={() => obtenerContactos()}
-          className="btn btn-outline-success ms-2"
-        >
-          Obtener contactos
-        </button>
-        {/* <!-- Button trigger modal --> */}
         <button
           type="button"
           className="btn btn-primary ms-2"
@@ -125,8 +28,17 @@ export const Home = () => {
         >
           Crear agenda
         </button>
+        <Link to="/nuevo-contacto">
+          <button className="btn btn-success ms-2">Crear contacto</button>
+        </Link>
+        <button
+          onClick={() => actions.obtenerContactos()}
+          className="btn btn-outline-success ms-2"
+        >
+          Obtener contactos
+        </button>
 
-        {/* <!-- Modal --> */}
+        {/* MODAL */}
         <div
           className="modal fade"
           id="exampleModal"
@@ -148,7 +60,12 @@ export const Home = () => {
                 ></button>
               </div>
               <div className="modal-body">
-                <form onSubmit={crearAgenda}>
+                <form
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    actions.crearAgenda();
+                  }}
+                >
                   <label htmlFor="agendaName" className="form-label">
                     Nombre de la agenda
                   </label>
@@ -184,7 +101,7 @@ export const Home = () => {
         </div>
       </div>
       <div className="contactList m-1">
-        {contacts.map((user) => (
+        {store.contacts.map((user) => (
           <div
             className="singleContact border rounded-2 d-flex flex-row m-1"
             key={user.id}
@@ -193,7 +110,9 @@ export const Home = () => {
               <img src={userImage} alt={user.name} />
             </div>
             <div className="col-9 ps-2">
-              <h4>{user.name}</h4>
+              <h4>
+                {user.name} - {user.id}
+              </h4>
               <p>
                 <i className="fas fa-home pe-2"></i>
                 {user.address}
@@ -220,7 +139,7 @@ export const Home = () => {
               <div className="deleteContact h-50 ">
                 <button
                   className="btn btn btn-outline-danger h-100 w-100"
-                  onClick={() => goEditContact(user.id)}
+                  onClick={() => actions.eliminarContacto(user.id)}
                 >
                   <i className="fas fa-trash-alt"></i>
                 </button>
