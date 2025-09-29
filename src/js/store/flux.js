@@ -297,9 +297,20 @@ const getState = ({ getStore, getActions, setStore }) => {
         }
       },
       goEditContact: async (body, id) => {
+        const actions = getActions();
+        const store = getStore();
+        const agendaSlug = store.nombreAgenda?.trim();
+
+        if (!agendaSlug) {
+          return {
+            success: false,
+            message: "Selecciona una agenda antes de editar un contacto.",
+          };
+        }
+
         try {
           const response = await fetch(
-            `https://playground.4geeks.com/contact/${id}`,
+            `https://playground.4geeks.com/contact/agendas/${agendaSlug}/contacts/${id}`,
             {
               method: "PUT",
               body: JSON.stringify(body),
