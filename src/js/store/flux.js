@@ -15,6 +15,11 @@ const getState = ({ getStore, getActions, setStore }) => {
       ],
       nombreAgenda: "",
       contacts: [],
+      agendas: [],
+      agendaPreview: {
+        slug: "",
+        contacts: [],
+      },
       nuevaAgenda: {},
       id: "",
     },
@@ -45,6 +50,7 @@ const getState = ({ getStore, getActions, setStore }) => {
 
       crearAgenda: async () => {
         const store = getStore();
+        const actions = getActions();
         const slug = store.nombreAgenda?.trim();
 
         if (!slug) {
@@ -84,6 +90,7 @@ const getState = ({ getStore, getActions, setStore }) => {
 
           const data = await response.json();
           setStore({ nombreAgenda: slug });
+          await actions.obtenerAgendas();
           return {
             success: true,
             message: data?.message || data?.msg || "Agenda creada correctamente.",
@@ -100,33 +107,189 @@ const getState = ({ getStore, getActions, setStore }) => {
       setNombreAgenda: (nombre) => {
         setStore({ nombreAgenda: nombre });
       },
-      obtenerContactos: async () => {
-        const store = getStore();
-        if (!store.nombreAgenda) {
-          alert("No existen contactos");
-          // Redirigir a NuevoContacto si es necesario
-          return;
-        }
-        const url = `https://playground.4geeks.com/contact/agendas/${store.nombreAgenda}/contacts`;
+      obtenerAgendas: async () => {
         try {
-          console.log(`Haciendo fetch a: ${url}`);
-          const response = await fetch(url);
-          console.log(`Respuesta recibida: ${response.status}`);
+          const response = await fetch(
+            "https://playground.4geeks.com/contact/agendas"
+          );
+
           if (!response.ok) {
-            throw new Error(`Error en la respuesta: ${response.status}`);
+            return {
+              success: false,
+              message: `No se pudieron obtener las agendas (${response.status}).`,
+            };
+          }
+
+          const payload = await response.json();
+          const rawAgendas = Array.isArray(payload)
+            ? payload
+            : payload?.agendas || [];
+          const agendas = rawAgendas
+            .map((item) => {
+              if (typeof item === "string") {
+                return { slug: item };
+              }
+              if (item && typeof item === "object") {
+                const slug =
+                  item.slug ||
+                  item.name ||
+                  item.agenda ||
+                  (typeof item.id === "string" ? item.id : "");
+                return {
+                  ...item,
+                  slug: slug || "",
+                };
+              }
+              return { slug: String(item || "") };
+            })
+            .filter((agenda) => agenda.slug);
+
+          setStore({ agendas });
+
+          return {
+            success: true,
+            agendas,
+          };
+        } catch (error) {
+          console.error("Error al obtener las agendas:", error);
+          return {
+            success: false,
+            message: "No se pudieron cargar las agendas. Intenta nuevamente.",
+          };
+        }
+      },
+      limpiarAgendaPreview: () => {
+        setStore({
+          agendaPreview: {
+            slug: "",
+            contacts: [],
+          },
+        });
+      },
+      previsualizarAgenda: async (slug) => {
+        const agendaSlug = slug?.trim();
+        if (!agendaSlug) {
+          setStore({
+            agendaPreview: {
+              slug: "",
+              contacts: [],
+            },
+          });
+          return {
+            success: false,
+            message: "Selecciona una agenda válida para previsualizar.",
+          };
+        }
+
+        try {
+          const response = await fetch(
+            `https://playground.4geeks.com/contact/agendas/${agendaSlug}/contacts`
+          );
+
+          if (!response.ok) {
+            return {
+              success: false,
+              message: `No se pudieron obtener los contactos (${response.status}).`,
+            };
+          }
+
+          const data = await response.json();
+          const contacts = data?.contacts || [];
+
+          setStore({
+            agendaPreview: {
+              slug: agendaSlug,
+              contacts,
+            },
+          });
+
+          return {
+            success: true,
+            contacts,
+          };
+        } catch (error) {
+          console.error("Error al previsualizar la agenda:", error);
+          return {
+            success: false,
+            message:
+              "No se pudo cargar la previsualización de contactos. Intenta nuevamente.",
+          };
+        }
+      },
+      seleccionarAgenda: async (slug) => {
+        const agendaSlug = slug?.trim();
+        if (!agendaSlug) {
+          return {
+            success: false,
+            message: "Selecciona una agenda válida.",
+          };
+        }
+
+        const result = await getActions().obtenerContactos(agendaSlug);
+        if (result?.success) {
+          setStore({ nombreAgenda: agendaSlug });
+        }
+
+        return result;
+      },
+      obtenerContactos: async (slug) => {
+        const store = getStore();
+        const agendaSlug = (slug ?? store.nombreAgenda)?.trim();
+
+        if (!agendaSlug) {
+          setStore({ contacts: [] });
+          return {
+            success: false,
+            message: "Selecciona una agenda para ver sus contactos.",
+          };
+        }
+        const url = `https://playground.4geeks.com/contact/agendas/${agendaSlug}/contacts`;
+        try {
+          const response = await fetch(url);
+
+          if (!response.ok) {
+            let errorMessage = `Error en la respuesta: ${response.status}`;
+            try {
+              const errorData = await response.json();
+              if (errorData?.msg) errorMessage = errorData.msg;
+            } catch (jsonError) {
+              console.warn(
+                "No se pudo parsear el error de la agenda al obtener contactos",
+                jsonError
+              );
+            }
+            return { success: false, message: errorMessage };
           }
           const data = await response.json();
-          console.log(data);
 
-          // Aquí actualizamos el estado global con los contactos
-          setStore({ contacts: data.contacts });
+          const contacts = data?.contacts || [];
 
-          return `Agenda cargada correctamente`;
+          const newState = {
+            contacts,
+          };
+          if (typeof slug === "string") {
+            newState.nombreAgenda = agendaSlug;
+          }
+
+          setStore({
+            ...newState,
+            agendaPreview: {
+              slug: "",
+              contacts: [],
+            },
+          });
+
+          return {
+            success: true,
+            message: "Agenda cargada correctamente.",
+            contacts,
+          };
         } catch (e) {
           console.error(`Manejo interno del error: ${e.message}`);
-          throw new Error(
-            `Manejo interno del error. Error original: ${e.message}`
-          );
+          return {
+            success: false,
+            message: "No se pudieron cargar los contactos. Intenta nuevamente.",
+          };
         }
       },
       goEditContact: async (body, id) => {
