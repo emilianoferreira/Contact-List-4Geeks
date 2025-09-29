@@ -83,7 +83,10 @@ const getState = ({ getStore, getActions, setStore }) => {
               const errorData = await response.json();
               if (errorData?.msg) errorMessage = errorData.msg;
             } catch (jsonError) {
-              console.warn("No se pudo parsear el error de la agenda", jsonError);
+              console.warn(
+                "No se pudo parsear el error de la agenda",
+                jsonError
+              );
             }
             return { success: false, message: errorMessage };
           }
@@ -93,7 +96,8 @@ const getState = ({ getStore, getActions, setStore }) => {
           await actions.obtenerAgendas();
           return {
             success: true,
-            message: data?.message || data?.msg || "Agenda creada correctamente.",
+            message:
+              data?.message || data?.msg || "Agenda creada correctamente.",
           };
         } catch (error) {
           console.error("Error al crear la agenda:", error);
@@ -304,14 +308,37 @@ const getState = ({ getStore, getActions, setStore }) => {
               },
             }
           );
-          if (!responde.ok) {
-            throw new Error("No se pudo actualizar");
+
+          if (!response.ok) {
+            let errorMessage = "No se pudo actualizar el contacto.";
+            try {
+              const errorData = await response.json();
+              if (errorData?.msg) errorMessage = errorData.msg;
+            } catch (jsonError) {
+              console.warn(
+                "No se pudo parsear el error del contacto en goEditContact",
+                jsonError
+              );
+            }
+            return { success: false, message: errorMessage };
           }
+
           const data = await response.json();
-          console.log(data);
-          const actions = getActions();
           await actions.obtenerContactos();
-        } catch {}
+          return {
+            success: true,
+            message:
+              data?.message ||
+              data?.msg ||
+              "Contacto actualizado correctamente.",
+          };
+        } catch (error) {
+          console.error("Error al editar el contacto en goEditContact:", error);
+          return {
+            success: false,
+            message: "Ocurrió un error inesperado al actualizar el contacto.",
+          };
+        }
       },
 
       editarContacto: async (body, id) => {
@@ -335,7 +362,10 @@ const getState = ({ getStore, getActions, setStore }) => {
               const errorData = await response.json();
               if (errorData?.msg) errorMessage = errorData.msg;
             } catch (jsonError) {
-              console.warn("No se pudo parsear el error del contacto", jsonError);
+              console.warn(
+                "No se pudo parsear el error del contacto",
+                jsonError
+              );
             }
             return { success: false, message: errorMessage };
           }
