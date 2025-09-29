@@ -17,6 +17,8 @@ const EditarContacto = () => {
     phone: "",
     address: "",
   });
+  const [errors, setErrors] = useState({});
+  const [statusMessage, setStatusMessage] = useState(null);
 
   useEffect(() => {
     if (contacto) {
@@ -34,10 +36,61 @@ const EditarContacto = () => {
     setContactData({ ...contactData, [name]: value });
   };
 
+  const validateFields = () => {
+    const newErrors = {};
+
+    if (!contactData.name.trim()) {
+      newErrors.name = "El nombre completo es obligatorio.";
+    }
+
+    if (!contactData.email.trim()) {
+      newErrors.email = "El correo electrónico es obligatorio.";
+    } else if (
+      !/^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i.test(contactData.email.trim())
+    ) {
+      newErrors.email = "Ingresa un correo electrónico válido.";
+    }
+
+    if (!contactData.phone.trim()) {
+      newErrors.phone = "El número de teléfono es obligatorio.";
+    } else if (!/^\+?[0-9\s-]{7,15}$/.test(contactData.phone.trim())) {
+      newErrors.phone = "Ingresa un teléfono válido (solo números, espacios o guiones).";
+    }
+
+    if (!contactData.address.trim()) {
+      newErrors.address = "La dirección es obligatoria.";
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
-    await actions.editarContacto(contactData, contacto.id);
-    navigate("/");
+    if (!contacto) return;
+
+    if (!validateFields()) {
+      setStatusMessage({
+        type: "danger",
+        text: "Por favor corrige los errores antes de continuar.",
+      });
+      return;
+    }
+
+    setStatusMessage(null);
+    const result = await actions.editarContacto(contactData, contacto.id);
+
+    if (result) {
+      setStatusMessage({
+        type: result.success ? "success" : "danger",
+        text: result.message,
+      });
+
+      if (result.success) {
+        setErrors({});
+        setTimeout(() => navigate("/"), 1200);
+      }
+    }
   };
 
   return (
@@ -55,7 +108,16 @@ const EditarContacto = () => {
               </button>
             </div>
 
-            <form onSubmit={handleSubmit}>
+            {statusMessage && (
+              <div
+                className={`alert alert-${statusMessage.type}`}
+                role="alert"
+              >
+                {statusMessage.text}
+              </div>
+            )}
+
+            <form onSubmit={handleSubmit} noValidate>
               <div className="mb-3">
                 <label htmlFor="contactFullName" className="form-label">
                   Full name
@@ -68,7 +130,12 @@ const EditarContacto = () => {
                   placeholder="John Cena"
                   value={contactData.name}
                   onChange={handleChange}
+                  required
+                  aria-invalid={errors.name ? "true" : "false"}
                 />
+                {errors.name && (
+                  <div className="text-danger small">{errors.name}</div>
+                )}
               </div>
               <div className="mb-3">
                 <label htmlFor="contactEmail" className="form-label">
@@ -82,7 +149,12 @@ const EditarContacto = () => {
                   placeholder="example@example.com"
                   value={contactData.email}
                   onChange={handleChange}
+                  required
+                  aria-invalid={errors.email ? "true" : "false"}
                 />
+                {errors.email && (
+                  <div className="text-danger small">{errors.email}</div>
+                )}
               </div>
               <div className="mb-3">
                 <label htmlFor="contactPhone" className="form-label">
@@ -96,7 +168,13 @@ const EditarContacto = () => {
                   placeholder="123-456-7890"
                   value={contactData.phone}
                   onChange={handleChange}
+                  required
+                  pattern="^\+?[0-9\s-]{7,15}$"
+                  aria-invalid={errors.phone ? "true" : "false"}
                 />
+                {errors.phone && (
+                  <div className="text-danger small">{errors.phone}</div>
+                )}
               </div>
               <div className="mb-3">
                 <label htmlFor="contactAddress" className="form-label">
@@ -110,7 +188,12 @@ const EditarContacto = () => {
                   placeholder="123 Main St"
                   value={contactData.address}
                   onChange={handleChange}
+                  required
+                  aria-invalid={errors.address ? "true" : "false"}
                 />
+                {errors.address && (
+                  <div className="text-danger small">{errors.address}</div>
+                )}
               </div>
               <button type="submit" className="btn btn-primary">
                 Guardar Cambios

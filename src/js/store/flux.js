@@ -45,8 +45,17 @@ const getState = ({ getStore, getActions, setStore }) => {
 
       crearAgenda: async () => {
         const store = getStore();
+        const slug = store.nombreAgenda?.trim();
+
+        if (!slug) {
+          return {
+            success: false,
+            message: "El nombre de la agenda es obligatorio.",
+          };
+        }
+
         const nuevaAgenda = {
-          slug: store.nombreAgenda,
+          slug,
           id: Math.random(),
         };
 
@@ -63,13 +72,28 @@ const getState = ({ getStore, getActions, setStore }) => {
           );
 
           if (!response.ok) {
-            throw new Error(`Error en la respuesta: ${response.status}`);
+            let errorMessage = `Error en la respuesta: ${response.status}`;
+            try {
+              const errorData = await response.json();
+              if (errorData?.msg) errorMessage = errorData.msg;
+            } catch (jsonError) {
+              console.warn("No se pudo parsear el error de la agenda", jsonError);
+            }
+            return { success: false, message: errorMessage };
           }
 
           const data = await response.json();
-          console.log("Agenda creada:", data);
+          setStore({ nombreAgenda: slug });
+          return {
+            success: true,
+            message: data?.message || data?.msg || "Agenda creada correctamente.",
+          };
         } catch (error) {
           console.error("Error al crear la agenda:", error);
+          return {
+            success: false,
+            message: "No se pudo crear la agenda. Intenta nuevamente.",
+          };
         }
       },
 
@@ -143,14 +167,31 @@ const getState = ({ getStore, getActions, setStore }) => {
           );
 
           if (!response.ok) {
-            throw new Error("No se pudo actualizar");
+            let errorMessage = "No se pudo actualizar el contacto.";
+            try {
+              const errorData = await response.json();
+              if (errorData?.msg) errorMessage = errorData.msg;
+            } catch (jsonError) {
+              console.warn("No se pudo parsear el error del contacto", jsonError);
+            }
+            return { success: false, message: errorMessage };
           }
 
           const data = await response.json();
-          console.log(data);
-          await actions.obtenerContactos(); // Para actualizar la lista de contactos
+          await actions.obtenerContactos();
+          return {
+            success: true,
+            message:
+              data?.message ||
+              data?.msg ||
+              "Contacto actualizado correctamente.",
+          };
         } catch (error) {
           console.error("Error al editar el contacto:", error);
+          return {
+            success: false,
+            message: "Ocurrió un error inesperado al actualizar el contacto.",
+          };
         }
       },
 

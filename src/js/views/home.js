@@ -1,12 +1,15 @@
-import React, { useEffect, useContext } from "react";
+import React, { useEffect, useContext, useState, useRef } from "react";
 import { Context } from "../store/appContext";
 import "../../styles/home.css";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import userImage from "../../img/user_image.jpg";
 
 export const Home = () => {
   const navigate = useNavigate();
   const { store, actions } = useContext(Context);
+  const [agendaStatus, setAgendaStatus] = useState(null);
+  const [isCreatingAgenda, setIsCreatingAgenda] = useState(false);
+  const modalRef = useRef(null);
 
   useEffect(() => {
     actions.obtenerContactos();
@@ -15,6 +18,48 @@ export const Home = () => {
   const goEditContact = (contactId) => {
     console.log(`Nos fuimos a editar el contacto ID: ${contactId}`);
     navigate(`/editar-contacto/${contactId}`);
+  };
+
+  const closeAgendaModal = () => {
+    if (typeof document === "undefined") return;
+    const modalElement = modalRef.current;
+    if (!modalElement) return;
+
+    if (typeof window !== "undefined" && window.bootstrap?.Modal) {
+      const existingInstance = window.bootstrap.Modal.getInstance(modalElement);
+      const modalInstance = existingInstance ||
+        new window.bootstrap.Modal(modalElement);
+      modalInstance.hide();
+    } else {
+      modalElement.classList.remove("show");
+      modalElement.setAttribute("aria-hidden", "true");
+      modalElement.removeAttribute("aria-modal");
+      modalElement.style.display = "none";
+
+      const backdrop = document.querySelector(".modal-backdrop");
+      if (backdrop) backdrop.remove();
+      document.body.classList.remove("modal-open");
+      document.body.style.removeProperty("overflow");
+      document.body.style.removeProperty("paddingRight");
+    }
+  };
+
+  const handleAgendaSubmit = async (event) => {
+    event.preventDefault();
+    setIsCreatingAgenda(true);
+    setAgendaStatus(null);
+    try {
+      const result = await actions.crearAgenda();
+      if (result) {
+        setAgendaStatus(result);
+        if (result.success) {
+          closeAgendaModal();
+          await actions.obtenerContactos();
+        }
+      }
+    } finally {
+      setIsCreatingAgenda(false);
+    }
   };
 
   return (
@@ -58,6 +103,7 @@ export const Home = () => {
           tabIndex="-1"
           aria-labelledby="exampleModalLabel"
           aria-hidden="true"
+          ref={modalRef}
         >
           <div className="modal-dialog">
             <div className="modal-content">
@@ -74,10 +120,7 @@ export const Home = () => {
               </div>
               <div className="modal-body">
                 <form
-                  onSubmit={(e) => {
-                    e.preventDefault();
-                    actions.crearAgenda();
-                  }}
+                  onSubmit={handleAgendaSubmit}
                 >
                   <label htmlFor="agendaName" className="form-label">
                     Nombre de la agenda
@@ -101,10 +144,10 @@ export const Home = () => {
                     </button>
                     <button
                       type="submit"
-                      data-bs-dismiss="modal"
                       className="btn btn-primary"
+                      disabled={isCreatingAgenda}
                     >
-                      Crear
+                      {isCreatingAgenda ? "Creando..." : "Crear"}
                     </button>
                   </div>
                 </form>
@@ -113,6 +156,14 @@ export const Home = () => {
           </div>
         </div>
       </div>
+      {agendaStatus && (
+        <div
+          className={`alert alert-${agendaStatus.success ? "success" : "danger"}`}
+          role="alert"
+        >
+          {agendaStatus.message}
+        </div>
+      )}
       <div className="contactList m-1">
         {store.nombreAgenda.length === 0 ? (
           <h3>No existe una agenda.</h3>
