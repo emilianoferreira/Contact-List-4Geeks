@@ -293,9 +293,20 @@ const getState = ({ getStore, getActions, setStore }) => {
         }
       },
       goEditContact: async (body, id) => {
+        const actions = getActions();
+        const store = getStore();
+        const agendaSlug = store.nombreAgenda?.trim();
+
+        if (!agendaSlug) {
+          return {
+            success: false,
+            message: "Selecciona una agenda antes de editar un contacto.",
+          };
+        }
+
         try {
           const response = await fetch(
-            `https://playground.4geeks.com/contact/${id}`,
+            `https://playground.4geeks.com/contact/agendas/${agendaSlug}/contacts/${id}`,
             {
               method: "PUT",
               body: JSON.stringify(body),
@@ -304,14 +315,37 @@ const getState = ({ getStore, getActions, setStore }) => {
               },
             }
           );
-          if (!responde.ok) {
-            throw new Error("No se pudo actualizar");
+
+          if (!response.ok) {
+            let errorMessage = "No se pudo actualizar el contacto.";
+            try {
+              const errorData = await response.json();
+              if (errorData?.msg) errorMessage = errorData.msg;
+            } catch (jsonError) {
+              console.warn(
+                "No se pudo parsear el error del contacto en goEditContact",
+                jsonError
+              );
+            }
+            return { success: false, message: errorMessage };
           }
+
           const data = await response.json();
-          console.log(data);
-          const actions = getActions();
           await actions.obtenerContactos();
-        } catch {}
+          return {
+            success: true,
+            message:
+              data?.message ||
+              data?.msg ||
+              "Contacto actualizado correctamente.",
+          };
+        } catch (error) {
+          console.error("Error al editar el contacto en goEditContact:", error);
+          return {
+            success: false,
+            message: "Ocurrió un error inesperado al actualizar el contacto.",
+          };
+        }
       },
 
       editarContacto: async (body, id) => {

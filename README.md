@@ -7,7 +7,7 @@
 
 
 ### Requirements:
-- Make sure you are using node version 10
+- Make sure you are using node version 16
 
 1. Install the packages:
 ```
